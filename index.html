@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Titrasi Asam Basa</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            margin: 0;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        p.subtitle {
+            color: #7f8c8d;
+            margin-top: 0;
+            margin-bottom: 25px;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+            justify-content: center;
+        }
+        /* Visual Alat Lab */
+        .lab-visual {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 250px;
+            position: relative;
+        }
+        .buret {
+            width: 24px;
+            height: 220px;
+            border: 2px solid #555;
+            border-bottom: none;
+            position: relative;
+            background: #eef7fa;
+            overflow: hidden;
+        }
+        .buret-liquid {
+            width: 100%;
+            height: 100%;
+            background-color: #3498db;
+            opacity: 0.4;
+            position: absolute;
+            bottom: 0;
+            transition: height 0.2s;
+        }
+        .buret-tip {
+            width: 6px;
+            height: 30px;
+            border: 2px solid #555;
+            border-top: none;
+            background: #eef7fa;
+        }
+        .drop {
+            width: 8px;
+            height: 8px;
+            background-color: #3498db;
+            border-radius: 50%;
+            opacity: 0;
+            margin: 2px 0;
+        }
+        @keyframes fall {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(35px); }
+        }
+        .dropping {
+            animation: fall 0.3s ease-in;
+        }
+        .erlenmeyer {
+            width: 140px;
+            height: 120px;
+            border: 3px solid #555;
+            border-radius: 10px 10px 40px 40px;
+            margin-top: 25px;
+            position: relative;
+            overflow: hidden;
+            background: #ffffff;
+            display: flex;
+            align-items: flex-end;
+        }
+        .flask-liquid {
+            width: 100%;
+            height: 45%;
+            background-color: rgba(240, 248, 255, 0.8); /* Bening awal */
+            transition: background-color 0.4s ease, height 0.2s;
+        }
+        /* Panel Kontrol */
+        .controls {
+            flex: 1;
+            min-width: 280px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .info-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+        .info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .ph-display {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+            text-align: center;
+            padding: 10px;
+            background: #ecf0f1;
+            border-radius: 8px;
+        }
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        button {
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: white;
+        }
+        .btn-add { background-color: #2980b9; }
+        .btn-add:hover { background-color: #1f6391; }
+        .btn-drop { background-color: #27ae60; }
+        .btn-drop:hover { background-color: #1e8449; }
+        .btn-reset { 
+            background-color: #e74c3c; 
+            grid-column: span 2;
+            margin-top: 10px;
+        }
+        .btn-reset:hover { background-color: #c0392b; }
+        .status-msg {
+            text-align: center;
+            font-weight: bold;
+            min-height: 20px;
+            color: #e67e22;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Simulasi Titrasi Asam Basa</h1>
+    <p class="subtitle">Titrasi HCl (Asam Kuat) dengan NaOH (Basa Kuat) + Indikator Fenolftalein (PP)</p>
+
+    <div class="container">
+        <!-- Area Visual -->
+        <div class="lab-visual">
+            <div class="buret">
+                <div class="buret-liquid" id="buretLiquid"></div>
+            </div>
+            <div class="buret-tip"></div>
+            <div class="drop" id="waterDrop"></div>
+            <div class="erlenmeyer">
+                <div class="flask-liquid" id="flaskLiquid"></div>
+            </div>
+        </div>
+
+        <!-- Area Kontrol & Data -->
+        <div class="controls">
+            <div class="info-box">
+                <p><strong>Titran (Buret):</strong> NaOH 0.1 M (Maks: 50 mL)</p>
+                <p><strong>Analit (Labu):</strong> 25 mL HCl 0.1 M</p>
+                <p><strong>Indikator:</strong> Fenolftalein (Trayek pH: 8.3 - 10.0)</p>
+            </div>
+
+            <div class="ph-display">
+                pH: <span id="phValue">1.00</span><br>
+                <span style="font-size: 14px; font-weight: normal;">Volume NaOH: <strong id="volAdded">0.0</strong> mL</span>
+            </div>
+
+            <div class="status-msg" id="statusMsg">Larutan bersifat asam (Bening)</div>
+
+            <div class="btn-group">
+                <button class="btn-drop" onclick="addNaOH(0.1)">+ 0.1 mL (Tetes)</button>
+                <button class="btn-add" onclick="addNaOH(1.0)">+ 1.0 mL</button>
+                <button class="btn-add" onclick="addNaOH(5.0)">+ 5.0 mL</button>
+                <button class="btn-drop" onclick="addNaOH(0.5)">+ 0.5 mL</button>
+                <button class="btn-reset" onclick="resetSim()">Ulangi Percobaan</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Parameter Awal
+        const volAcid = 25.0;     // mL HCl
+        const concAcid = 0.1;     // Molaritas HCl
+        const concBase = 0.1;     // Molaritas NaOH
+        const maxBuret = 50.0;    // Kapasitas Buret
+        let volBase = 0.0;        // mL NaOH yang ditambahkan
+
+        function addNaOH(amount) {
+            if (volBase + amount > maxBuret) {
+                alert("Buret sudah kosong! Silakan ulangi percobaan.");
+                return;
+            }
+
+            volBase = Math.round((volBase + amount) * 10) / 10;
+            triggerDropAnimation();
+            updateSimulation();
+        }
+
+        function triggerDropAnimation() {
+            const drop = document.getElementById('waterDrop');
+            drop.classList.remove('dropping');
+            void drop.offsetWidth; // Trigger reflow
+            drop.classList.add('dropping');
+        }
+
+        function calculatePH() {
+            const molAcid = volAcid * concAcid; // mmol H+
+            const molBase = volBase * concBase; // mmol OH-
+            const totalVol = volAcid + volBase;
+
+            if (molAcid > molBase) {
+                // Sisa Asam
+                const concH = (molAcid - molBase) / totalVol;
+                return -Math.log10(concH);
+            } else if (molBase > molAcid) {
+                // Sisa Basa
+                const concOH = (molBase - molAcid) / totalVol;
+                const pOH = -Math.log10(concOH);
+                return 14 - pOH;
+            } else {
+                // Titik Ekuivalen (Asam Kuat + Basa Kuat)
+                return 7.00;
+            }
+        }
+
+        function updateSimulation() {
+            const pH = calculatePH();
+            
+            // Update Teks
+            document.getElementById('phValue').innerText = pH.toFixed(2);
+            document.getElementById('volAdded').innerText = volBase.toFixed(1);
+
+            // Update Tinggi Cairan Buret & Labu
+            const buretPercent = ((maxBuret - volBase) / maxBuret) * 100;
+            document.getElementById('buretLiquid').style.height = buretPercent + '%';
+
+            const flaskPercent = 45 + (volBase / maxBuret) * 40;
+            document.getElementById('flaskLiquid').style.height = flaskPercent + '%';
+
+            // Update Warna Indikator Fenolftalein & Status
+            const flaskLiquid = document.getElementById('flaskLiquid');
+            const statusMsg = document.getElementById('statusMsg');
+
+            if (pH < 7.0) {
+                flaskLiquid.style.backgroundColor = 'rgba(240, 248, 255, 0.8)'; // Bening
+                statusMsg.innerText = "Larutan bersifat asam (Bening)";
+                statusMsg.style.color = "#2980b9";
+            } else if (pH === 7.0) {
+                flaskLiquid.style.backgroundColor = 'rgba(240, 248, 255, 0.8)'; // Bening
+                statusMsg.innerText = "TITIK EKUIVALEN TERCAPAI! (pH = 7.00)";
+                statusMsg.style.color = "#27ae60";
+            } else if (pH > 7.0 && pH < 8.3) {
+                flaskLiquid.style.backgroundColor = 'rgba(255, 230, 240, 0.8)'; // Sangat pucat
+                statusMsg.innerText = "Mendekati titik akhir titrasi...";
+                statusMsg.style.color = "#e67e22";
+            } else if (pH >= 8.3 && pH <= 10.0) {
+                flaskLiquid.style.backgroundColor = 'rgba(255, 105, 180, 0.5)'; // Pink Muda (Titik Akhir)
+                statusMsg.innerText = "TITIK AKHIR TITRASI! (Pink Muda)";
+                statusMsg.style.color = "#d81b60";
+            } else {
